@@ -1,0 +1,261 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+# Virtual Environment
+.venv/
+.venv.bak/
+.virtualenv/
+.vscode/.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-*
+*.iml
+
+# Discord Bot specific
+.env
+.env.local
+.env.production
+.env.development
+*.token
+*.secret
+secrets/
+credentials.json
+token.json
+*.pem
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data/*.db
+data/*.sqlite
+backups/*.db
+backups/*.sqlite
+*.db.backup
+
+# Logs
+logs/
+*.log
+log_*.txt
+*.log.*
+bot.log.*
+discord_bot.log
+
+# AI Models
+models/
+ollama_models/
+*.gguf
+*.bin
+*.onnx
+*.pt
+*.pth
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+
+# Build
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+*.tmp
+*.temp
+
+# Backups
+*.bak
+*.backup
+backups/
+*.old
+*.orig
+
+# Config with secrets
+config/local.yaml
+config/production.yaml
+*.secret.yaml
+*.key
+*.crt
+
+# Data files
+*.csv
+*.xlsx
+*.json
+!requirements.json
+!config.example.json
+
+# Docker
+.docker/
+docker-compose.override.yml
+*.tar.gz
+*.tar.bz2
+
+# Systemd
+*.service
+*.timer
+*.socket
+
+# Cron jobs
+crontab.txt
+cron_backup.txt
+
+# Documentation
+docs/_build/
+site/
+*.aux
+*.out
+*.toc
+
+# Monitoring
+*.pid
+*.sock
+prometheus_data/
+grafana_data/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+temp_*
+*.temp_*
+
+# Memory dumps
+*.dump
+*.heap
+*.core
+
+# Testing reports
+test-reports/
+test-results/
+junit.xml
+pytest.xml
+
+# Coverage reports
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# profiling data
+*.prof
+*.lprof
+
+# Uploads
+uploads/
+downloads/
+media/
+images/
+
+# Backup of sensitive data
+*.gpg
+*.asc
+*.encrypted
+
+# Environment specific
+.env.*.local
+*.local
+!.gitkeep
+
+# Log rotation archive
+*.log.1
+*.log.2
+*.log.3
+*.log.4
+*.log.5
+*.log.gz
+*.log.zip
+
+# SQLite WAL files
+*-wal
+*-shm
+
+# Ollama
+ollama.log
+.ollama/
+~/.ollama/
+
+# IDE specific - PyCharm
+.idea/
+*.iml
+*.iws
+.idea_modules/
+
+# IDE specific - VSCode
+.vscode/
+*.code-workspace
+.vscode-test/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+*.part
+*.crdownload
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
