@@ -4,6 +4,9 @@ from infrastructure.config import get_config, BotConfig
 from infrastructure.database.connection import DatabaseManager
 from infrastructure.database.repositories.role_repository import RoleRepository
 from application.services.role_service import RoleService
+from infrastructure.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class Container:
@@ -13,6 +16,8 @@ class Container:
         self._database: Optional[DatabaseManager] = None
         self._role_repo: Optional[RoleRepository] = None
         self._role_service: Optional[RoleService] = None
+
+        logger.info("DI Container initialized")
 
     async def get_database(self) -> DatabaseManager:
         """Получить менеджер БД"""

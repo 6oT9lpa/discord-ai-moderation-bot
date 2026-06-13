@@ -6,7 +6,8 @@ from disnake.ext import commands
 
 from di import Container
 from presentation import DiscordBot
-from infrastructure.logging.logger import get_logger  # ← исправлен импорт
+from infrastructure.logging import get_logger 
+from presentation.cogs.roles_cog import RolesCog
 
 logger = get_logger(__name__)
 
@@ -15,16 +16,23 @@ class Bootstrap:
     def __init__(self):
         self.container = Container()
         self.bot: DiscordBot = None
+        self._role_service = None
 
     async def run(self):
         """Запуск бота"""
         try:
-            role_service = await self.container.get_role_service()
+            self._role_service = await self.container.get_role_service()
+
+            if self._role_service is None:
+                logger.error("Failed to get role service from container!")
+                return
+            
+            logger.info(f"Role service obtained: {self._role_service}")
             
             # Создаём бота
             self.bot = DiscordBot(
                 config=self.container.config,
-                role_service=role_service
+                role_service=self._role_service
             )
             
             # Регистрируем команды
@@ -63,48 +71,35 @@ class Bootstrap:
         """Регистрация команд"""
         logger.info("Registering commands...")
         
-        @self.bot.slash_command(name="ping", description="Проверка бота")
-        async def ping(ctx: disnake.ApplicationCommandInteraction):
-            latency = round(self.bot.latency * 1000)
-            logger.info(f"Ping command invoked. Latency: {latency}ms")
-            await ctx.response.send_message(f"Pong! {latency}ms")
-        
-        @self.bot.slash_command(name="sync_roles", description="Синхронизировать роли")
-        async def sync_roles(ctx: disnake.ApplicationCommandInteraction):
-            if not ctx.author.guild_permissions.administrator:
-                await ctx.response.send_message("Только администраторы могут использовать эту команду", ephemeral=True)
-                return
-            
-            if not self.bot._role_service:
-                logger.error("Role service not available for sync_roles command")
-                await ctx.response.send_message("Сервис ролей не доступен", ephemeral=True)
-                return
-            
-            await ctx.response.defer(ephemeral=True)
-            
-            try:
-                guild = ctx.guild
-                count = await self.bot._role_service.sync_roles(guild)
-                logger.info(f"Sync roles command invoked. {count} roles synchronized for guild {guild.name}")
-                await ctx.edit_original_response(content=f"✅ Синхронизировано **{count}** ролей!")
-                
-                roles = await self.bot._role_service.get_all_roles()
-                if roles:
-                    role_names = [r['name'] for r in roles[:10]]
-                    preview = ', '.join(role_names)
-                    if len(roles) > 10:
-                        preview += f" и ещё {len(roles) - 10}..."
-                    await ctx.followup.send(f"Роли в БД: {preview}", ephemeral=True)
+        self.bot.add_cog(RolesCog(self.bot, self._role_service))
+        logger.info("  ✅ RolesCog registered")
 
-            except Exception as e:
-                logger.error(f"Sync roles error: {e}", exc_info=True)
-                await ctx.edit_original_response(content=f"❌ Ошибка: {e}")
-    
+        logger.info("All cogs registered successfully")
+        
+        
     async def _shutdown(self):
-        """Остановка"""
         logger.info("Shutting down...")
+        
+        # Закрываем бота
+        if self.bot and not self.bot.is_closed():
+            try:
+                await self.bot.close()
+                logger.info("Bot closed")
+            except Exception as e:
+                logger.error(f"Error closing bot: {e}")
+        
+        # Закрываем контейнер
         if self.container:
-            await self.container.shutdown()
-        if self.bot:
-            await self.bot.close()
+            try:
+                await self.container.shutdown()
+                logger.info("Container shutdown complete")
+            except Exception as e:
+                logger.error(f"Error shutting down container: {e}")
+        
         logger.info("Shutdown complete")
+
+def handle_exception(loop, context):
+    """Обработка необработанных исключений"""
+    msg = context.get("exception", context["message"])
+    logger.error(f"Unhandled exception: {msg}")
+    loop.stop()
