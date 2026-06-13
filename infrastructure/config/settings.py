@@ -23,6 +23,9 @@ class BotConfig(BaseSettings):
     # Logging
     log_level: str = Field("INFO", env="LOG_LEVEL")
 
+    command_prefix: str = Field("!", env="COMMAND_PREFIX")
+    activity_name: str = Field("playing in vscode", env="ACTIVITY_NAME")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
