@@ -56,16 +56,19 @@ class Bootstrap:
     
     def _setup_signal_handlers(self):
         """Настройка обработки сигналов для graceful shutdown"""
-        loop = asyncio.get_event_loop()
-        
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            try:
-                loop.add_signal_handler(
-                    sig,
-                    lambda: asyncio.create_task(self._shutdown())
-                )
-            except NotImplementedError:
-                pass
+        try:
+            loop = asyncio.get_event_loop()
+            
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                try:
+                    loop.add_signal_handler(
+                        sig,
+                        lambda s=sig: asyncio.create_task(self._shutdown())
+                    )
+                except (NotImplementedError, ValueError):
+                    pass
+        except Exception as e:
+            logger.warning(f"Could not setup signal handlers: {e}")
     
     async def _register_commands(self):
         """Регистрация команд"""
