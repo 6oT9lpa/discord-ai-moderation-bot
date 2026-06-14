@@ -4,6 +4,8 @@ from infrastructure.config import get_config, BotConfig
 from infrastructure.database.connection import DatabaseManager
 from infrastructure.database.repositories.role_repository import RoleRepository
 from application.services.role_service import RoleService
+from application.services.stats_service import StatsService
+from infrastructure.database.repositories.stats_repository import StatsRepository
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -16,6 +18,8 @@ class Container:
         self._database: Optional[DatabaseManager] = None
         self._role_repo: Optional[RoleRepository] = None
         self._role_service: Optional[RoleService] = None
+        self._stats_service: Optional[StatsService] = None
+        self._stats_repo: Optional[StatsRepository] = None
 
         logger.info("DI Container initialized")
 
@@ -41,6 +45,20 @@ class Container:
             self._role_service = RoleService(repo, self.config)
         return self._role_service
     
+    async def get_stats_service(self) -> StatsService:
+        """Получить сервис статистики"""
+        if not self._stats_service:
+            repo = await self.get_stats_repository()
+            self._stats_service = StatsService(repo, self.config)  # ✅ Исправлено!
+        return self._stats_service
+    
+    async def get_stats_repository(self) -> StatsRepository:
+        """Получить репозиторий статистики"""
+        if not self._stats_repo:
+            db = await self.get_database()
+            self._stats_repo = StatsRepository(db)  # ✅ Без guild_id
+        return self._stats_repo
+
     async def shutdown(self):
         """Закрытие ресурсов"""
         if self._database:

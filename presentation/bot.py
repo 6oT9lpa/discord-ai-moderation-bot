@@ -12,10 +12,12 @@ class DiscordBot(commands.Bot):
     def __init__(
         self,
         config: BotConfig,
-        role_service=None
+        role_service=None,
+        stats_service=None
     ):
         self._config = config
         self._role_service = role_service
+        self._stats_service = stats_service
 
         intents = disnake.Intents.default()
         intents.message_content = True

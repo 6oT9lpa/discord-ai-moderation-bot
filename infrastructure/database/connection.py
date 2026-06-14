@@ -66,7 +66,7 @@ class DatabaseManager:
                 id INTEGER PRIMARY KEY,
                 guild_id INTEGER NOT NULL,
                 channel_id INTEGER NOT NULL,
-                author_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
                 content TEXT,
                 deleted BOOLEAN DEFAULT 0,
                 edited BOOLEAN DEFAULT 0,
@@ -77,8 +77,8 @@ class DatabaseManager:
             )
         """)
         await self._connection.execute("""
-            CREATE INDEX IF NOT EXISTS idx_messages_author 
-            ON messages(author_id)
+            CREATE INDEX IF NOT EXISTS idx_messages_user 
+            ON messages(user_id)
         """)
         await self._connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_messages_channel 
@@ -92,6 +92,11 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_messages_deleted 
             ON messages(deleted)
         """)
+        await self._connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messages_guild_time 
+            ON messages(guild_id, timestamp)
+        """)
+        await self._connection.commit()
 
     async def _create_punishments_table(self) -> None:
         """Таблица наказаний"""
@@ -99,10 +104,10 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS punishments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                mod_id INTEGER,  -- ← изменено: может быть NULL для авто-наказаний
+                mod_id INTEGER,
                 type TEXT NOT NULL,
                 reason TEXT,
-                duration TEXT,  -- ← добавлено: '10m', '1h', '1d'
+                duration TEXT,
                 expires_at TIMESTAMP,
                 active BOOLEAN DEFAULT 1,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -119,7 +124,8 @@ class DatabaseManager:
         await self._connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_punishments_expires 
             ON punishments(expires_at)
-        """) 
+        """)
+        await self._connection.commit()
 
     async def _create_streamers_table(self) -> None:
         """Таблица стримеров"""
@@ -130,11 +136,11 @@ class DatabaseManager:
                 platform TEXT NOT NULL CHECK(platform IN ('twitch', 'youtube', 'kick')),
                 channel_url TEXT NOT NULL,
                 channel_name TEXT,
-                template TEXT,  -- JSON с настройками embed
-                ping_role_id INTEGER,  -- ← добавлено: роль для пинга
+                template TEXT,
+                ping_role_id INTEGER,
                 active BOOLEAN DEFAULT 1,
-                last_stream_id TEXT,  -- ← добавлено: для антидубля
-                last_check TIMESTAMP,  -- ← добавлено: когда проверяли
+                last_stream_id TEXT,
+                last_check TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, platform)
             )
@@ -151,28 +157,30 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_streamers_active 
             ON streamers(active)
         """)
+        await self._connection.commit()
 
     async def _create_server_stats_table(self) -> None:
         """Таблица статистики сервера"""
         await self._connection.execute("""
             CREATE TABLE IF NOT EXISTS server_stats (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT UNIQUE,  -- ← изменено: TEXT для ISO даты
+                date TEXT UNIQUE,
                 members_total INTEGER DEFAULT 0,
                 members_online INTEGER DEFAULT 0,
-                members_voice INTEGER DEFAULT 0,  -- ← добавлено
+                members_voice INTEGER DEFAULT 0,
                 messages_count INTEGER DEFAULT 0,
                 voice_hours REAL DEFAULT 0,
                 new_members INTEGER DEFAULT 0,
                 left_members INTEGER DEFAULT 0,
-                top_channel_id INTEGER,  -- ← добавлено: самый активный канал
-                top_channel_count INTEGER  -- ← добавлено: количество сообщений
+                top_channel_id INTEGER,
+                top_channel_count INTEGER
             )
         """)
         await self._connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_stats_date 
             ON server_stats(date)
         """)
+        await self._connection.commit()
 
     async def _create_roles_table(self) -> None:
         """Таблица ролей"""
@@ -198,6 +206,7 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_roles_auto_assign 
             ON roles(is_auto_assign)
         """)
+        await self._connection.commit()
 
     async def _create_channel_config_table(self) -> None:
         """Таблица конфигурации каналов"""
@@ -208,7 +217,7 @@ class DatabaseManager:
                 is_ai_whitelisted BOOLEAN DEFAULT 0,
                 welcome_enabled BOOLEAN DEFAULT 1,
                 slowmode_override INTEGER DEFAULT NULL,
-                auto_delete_after INTEGER,  -- ← добавлено: авто-удаление через N секунд
+                auto_delete_after INTEGER,
                 custom_name TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -221,9 +230,10 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_channel_whitelist 
             ON channel_config(is_ai_whitelisted)
         """)
+        await self._connection.commit()
 
     async def _create_user_stats_table(self) -> None:
-        """Таблица статистики пользователей (добавил новую)"""
+        """Таблица статистики пользователей"""
         await self._connection.execute("""
             CREATE TABLE IF NOT EXISTS user_stats (
                 user_id INTEGER NOT NULL,
@@ -231,15 +241,22 @@ class DatabaseManager:
                 messages_count INTEGER DEFAULT 0,
                 voice_minutes INTEGER DEFAULT 0,
                 warnings_count INTEGER DEFAULT 0,
-                last_message TIMESTAMP,
-                joined_at TIMESTAMP,
-                PRIMARY KEY (user_id, guild_id)
+                last_message TEXT,
+                joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, guild_id)
             )
+        """)
+        await self._connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_stats_guild 
+            ON user_stats(guild_id)
         """)
         await self._connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_user_stats_messages 
             ON user_stats(messages_count DESC)
         """)
+        await self._connection.commit()
     
     async def execute(self, query: str, params: tuple = ()) -> aiosqlite.Cursor:
         """Выполнение запроса"""
