@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
+from core.interfaces.repositories import RoleRepositoryInterface
 from infrastructure.database.connection import DatabaseManager
 from infrastructure.database.repositories.base import BaseRepository
 from infrastructure.logging.logger import get_logger
@@ -8,7 +9,7 @@ from infrastructure.logging.logger import get_logger
 logger = get_logger(__name__)
 
 
-class RoleRepository(BaseRepository):
+class RoleRepository(RoleRepositoryInterface, BaseRepository):
     _TABLE_NAME = "roles"
     _ALLOWED_COLUMNS = {
         "role_id", "guild_id", "name", "color", "position",
@@ -158,7 +159,8 @@ class RoleRepository(BaseRepository):
     
     async def get_auto_assign_count(self) -> int:
         """Получить количество ролей для автовыдачи"""
-        return await self.count(
-            where_clause="guild_id = ? AND is_auto_assign = 1",
-            params=(self.guild_id,)
+        result = await self.fetch_one(
+            "SELECT COUNT(*) as count FROM roles WHERE guild_id = ? AND is_auto_assign = 1",
+            (self._guild_id,),
         )
+        return result["count"] if result else 0

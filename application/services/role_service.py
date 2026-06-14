@@ -2,8 +2,9 @@ from typing import List, Optional, Dict, Any
 import disnake
 from datetime import datetime, timezone, timedelta
 
+from core.interfaces.repositories import RoleRepositoryInterface
+from core.interfaces.services import RoleServiceInterface
 from infrastructure.config import BotConfig
-from infrastructure.database.repositories.role_repository import RoleRepository
 from infrastructure.database.repositories.role_panel_message_repository import RolePanelMessageRepository
 from infrastructure.database.repositories.role_panel_button_repository import RolePanelButtonRepository
 from infrastructure.logging import get_logger
@@ -18,8 +19,8 @@ def get_msk_timestamp() -> str:
     return datetime.now(msk_tz).strftime("%Y-%m-%d %H:%M:%S")
 
 
-class RoleService:
-    def __init__(self, role_repo: RoleRepository, config: BotConfig):
+class RoleService(RoleServiceInterface):
+    def __init__(self, role_repo: RoleRepositoryInterface, config: BotConfig):
         self.role_repo = role_repo
         self.config = config
         self._bot: Optional[disnake.Client] = None

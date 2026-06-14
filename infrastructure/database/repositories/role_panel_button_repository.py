@@ -1,4 +1,6 @@
 from typing import List, Optional, Dict, Any
+
+from core.interfaces.repositories import RolePanelButtonRepositoryInterface
 from infrastructure.database.connection import DatabaseManager
 from infrastructure.database.repositories.base import BaseRepository
 from infrastructure.logging.logger import get_logger
@@ -6,7 +8,7 @@ from infrastructure.logging.logger import get_logger
 logger = get_logger(__name__)
 
 
-class RolePanelButtonRepository(BaseRepository):
+class RolePanelButtonRepository(RolePanelButtonRepositoryInterface, BaseRepository):
     _TABLE_NAME = "role_panel_buttons"
     
     def __init__(self, db_manager: DatabaseManager):

@@ -1,6 +1,7 @@
 # infrastructure/database/repositories/role_panel_message_repository.py
 from typing import List, Optional, Dict, Any
 
+from core.interfaces.repositories import RolePanelMessageRepositoryInterface
 from infrastructure.database.connection import DatabaseManager
 from infrastructure.database.repositories.base import BaseRepository
 from infrastructure.logging import get_logger
@@ -8,7 +9,7 @@ from infrastructure.logging import get_logger
 logger = get_logger(__name__)
 
 
-class RolePanelMessageRepository(BaseRepository):
+class RolePanelMessageRepository(RolePanelMessageRepositoryInterface, BaseRepository):
     _TABLE_NAME = "role_panel_messages"
     _ALLOWED_COLUMNS = {
         "id", "guild_id", "channel_id", "message_id",
