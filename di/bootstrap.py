@@ -7,6 +7,7 @@ from disnake.ext import commands
 from di import Container
 from presentation import DiscordBot
 from infrastructure.logging import get_logger 
+from presentation.cogs.admin_cog import AdminCog
 from presentation.cogs.roles_cog import RolesCog
 
 logger = get_logger(__name__)
@@ -16,18 +17,25 @@ class Bootstrap:
     def __init__(self):
         self.container = Container()
         self.bot: DiscordBot = None
+        self._admin_service = None
         self._role_service = None
 
     async def run(self):
         """Запуск бота"""
         try:
             self._role_service = await self.container.get_role_service()
+            self._admin_service = await self.container.get_admin_service()
 
             if self._role_service is None:
                 logger.error("Failed to get role service from container!")
                 return
             
+            if self._admin_service is None:
+                logger.error("Failed to get admin service from container!")
+                return
+            
             logger.info(f"Role service obtained: {self._role_service}")
+            logger.info(f"Admin service obtained: {self._admin_service}")
             
             # Создаём бота
             self.bot = DiscordBot(
@@ -79,6 +87,8 @@ class Bootstrap:
         
         self.bot.add_cog(RolesCog(self.bot, self._role_service))
         logger.info("  ✅ RolesCog registered")
+        self.bot.add_cog(AdminCog(self.bot, self._role_service, self._admin_service))
+        logger.info("  ✅ AdminCog registered")
 
         logger.info("All cogs registered successfully")
         
