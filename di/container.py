@@ -6,6 +6,8 @@ from infrastructure.database.repositories.role_repository import RoleRepository
 from infrastructure.database.repositories.punishment_repository import PunishmentRepository
 from application.services.role_service import RoleService
 from application.services.admin_service import AdminService
+from application.services.ai_service import AIService
+from infrastructure.ai.ollama_client import OllamaClient
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,6 +22,8 @@ class Container:
         self._role_service: Optional[RoleService] = None
         self._punishment_repo: Optional[PunishmentRepository] = None
         self._admin_service: Optional[AdminService] = None
+        self._ollama_client: Optional[OllamaClient] = None
+        self._ai_service: Optional[AIService] = None
 
         logger.info("DI Container initialized")
 
@@ -59,7 +63,25 @@ class Container:
             self._admin_service = AdminService(repo)
         return self._admin_service
     
+    async def get_ollama_client(self) -> OllamaClient:
+        """Получить клиент Ollama"""
+        if not self._ollama_client:
+            self._ollama_client = OllamaClient(
+                base_url=self.config.ollama_base_url,
+                model=self.config.ollama_model
+            )
+        return self._ollama_client
+    
+    async def get_ai_service(self) -> AIService:
+        """Получить сервис ИИ"""
+        if not self._ai_service:
+            ollama = await self.get_ollama_client()
+            self._ai_service = AIService(ollama)
+        return self._ai_service
+    
     async def shutdown(self):
         """Закрытие ресурсов"""
         if self._database:
             await self._database.close()
+        if self._ollama_client:
+            await self._ollama_client.close_session()

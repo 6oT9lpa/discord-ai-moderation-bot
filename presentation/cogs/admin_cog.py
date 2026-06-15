@@ -204,7 +204,7 @@ ctx):
                 await ctx.response.send_message(f"❌ Ошибка при выдаче тайм-аута: {str(e)}", ephemeral=True)
 
     @commands.slash_command(name="mute", description="Выдать тайм-аут участнику")
-    async def slash_mute(self, user: disnake.User, reason: str, hours: int, minutes: int, ctx: disnake.ApplicationCommandInteraction):
+    async def slash_mute(self, ctx: disnake.ApplicationCommandInteraction, user: disnake.User, reason: str, hours: int, minutes: int = 0):
         await self.mute(user, reason, hours, minutes, ctx)
 
     @commands.user_command(name="Выдать тайм-аут")

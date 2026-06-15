@@ -9,6 +9,7 @@ from presentation import DiscordBot
 from infrastructure.logging import get_logger 
 from presentation.cogs.admin_cog import AdminCog
 from presentation.cogs.roles_cog import RolesCog
+from presentation.cogs.ai_cog import AICog
 
 logger = get_logger(__name__)
 
@@ -19,12 +20,15 @@ class Bootstrap:
         self.bot: DiscordBot = None
         self._admin_service = None
         self._role_service = None
+        self._ai_service = None
 
     async def run(self):
         """Запуск бота"""
         try:
             self._role_service = await self.container.get_role_service()
             self._admin_service = await self.container.get_admin_service()
+            self._ai_service = await self.container.get_ai_service()
+            self._db = await self.container.get_database()
 
             if self._role_service is None:
                 logger.error("Failed to get role service from container!")
@@ -34,8 +38,13 @@ class Bootstrap:
                 logger.error("Failed to get admin service from container!")
                 return
             
+            if self._ai_service is None:
+                logger.error("Failed to get AI service from container!")
+                return
+            
             logger.info(f"Role service obtained: {self._role_service}")
             logger.info(f"Admin service obtained: {self._admin_service}")
+            logger.info(f"AI service obtained: {self._ai_service}")
             
             # Создаём бота
             self.bot = DiscordBot(
@@ -89,6 +98,8 @@ class Bootstrap:
         logger.info("  ✅ RolesCog registered")
         self.bot.add_cog(AdminCog(self.bot, self._role_service, self._admin_service))
         logger.info("  ✅ AdminCog registered")
+        self.bot.add_cog(AICog(self.bot, self._ai_service, self._admin_service, self._db))
+        logger.info("  ✅ AICog registered")
 
         logger.info("All cogs registered successfully")
         

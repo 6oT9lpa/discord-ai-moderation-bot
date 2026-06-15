@@ -25,6 +25,11 @@ class BotConfig(BaseSettings):
 
     command_prefix: str = Field("!", env="COMMAND_PREFIX")
     activity_name: str = Field("БОЙЧИК ЦЕЛУЕТ В ЩЕЧКУ, я знаю что он хочет", env="ACTIVITY_NAME")
+    
+    # Ollama AI Configuration
+    ollama_base_url: str = Field("http://localhost:11434", env="OLLAMA_BASE_URL")
+    ollama_model: str = Field("mistral", env="OLLAMA_MODEL")
+    ollama_enabled: bool = Field(False, env="OLLAMA_ENABLED")
 
     class Config:
         env_file = ".env"
