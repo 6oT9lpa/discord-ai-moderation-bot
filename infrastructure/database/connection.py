@@ -56,6 +56,7 @@ class DatabaseManager:
         await self._create_roles_table()
         await self._create_channel_config_table()
         await self._create_user_stats_table()
+        await self._create_voice_table()
 
         logger.info("All tables created successfully")
     
@@ -281,3 +282,24 @@ class DatabaseManager:
         """Фиксация транзакции"""
         if self._connection:
             await self._connection.commit()
+
+    async def _create_voice_table(self) -> None:
+        await self._connection.execute("""
+            CREATE TABLE IF NOT EXISTS voice_rooms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                channel_id INTEGER UNIQUE NOT NULL,
+                guild_id INTEGER NOT NULL,
+                owner_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                is_persistent BOOLEAN DEFAULT 0,
+                created_at TEXT,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await self._connection.execute("""
+            CREATE TABLE IF NOT EXISTS voice_config (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        await self._connection.commit()

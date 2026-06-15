@@ -6,6 +6,8 @@ from infrastructure.database.repositories.role_repository import RoleRepository
 from application.services.role_service import RoleService
 from application.services.stats_service import StatsService
 from infrastructure.database.repositories.stats_repository import StatsRepository
+from application.services.voice_service import VoiceService
+from infrastructure.database.repositories.voice_repository import VoiceRepository
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,6 +22,8 @@ class Container:
         self._role_service: Optional[RoleService] = None
         self._stats_service: Optional[StatsService] = None
         self._stats_repo: Optional[StatsRepository] = None
+        self._voice_service: Optional[VoiceService] = None
+        self._voice_repo: Optional[VoiceRepository] = None
 
         logger.info("DI Container initialized")
 
@@ -49,15 +53,29 @@ class Container:
         """Получить сервис статистики"""
         if not self._stats_service:
             repo = await self.get_stats_repository()
-            self._stats_service = StatsService(repo, self.config)  # ✅ Исправлено!
+            self._stats_service = StatsService(repo, self.config)  
         return self._stats_service
     
     async def get_stats_repository(self) -> StatsRepository:
         """Получить репозиторий статистики"""
         if not self._stats_repo:
             db = await self.get_database()
-            self._stats_repo = StatsRepository(db)  # ✅ Без guild_id
+            self._stats_repo = StatsRepository(db)  
         return self._stats_repo
+    
+    async def get_voice_service(self) -> VoiceService:
+        """Получить сервис войсов"""
+        if not self._voice_service:
+            repo = await self.get_voice_repository()
+            self._voice_service = VoiceService(repo)  
+        return self._voice_service
+    
+    async def get_voice_repository(self) -> VoiceRepository:
+        """Получить репозиторий войсов"""
+        if not self._voice_repo:
+            db = await self.get_database()
+            self._voice_repo = VoiceRepository(db)  
+        return self._voice_repo
 
     async def shutdown(self):
         """Закрытие ресурсов"""

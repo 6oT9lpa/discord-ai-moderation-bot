@@ -9,6 +9,7 @@ from presentation import DiscordBot
 from infrastructure.logging import get_logger 
 from presentation.cogs.roles_cog import RolesCog
 from presentation.cogs.stats_cog import StatsCog
+from presentation.cogs.voice_cog import VoiceCog
 
 logger = get_logger(__name__)
 
@@ -19,12 +20,14 @@ class Bootstrap:
         self.bot: DiscordBot = None
         self._role_service = None
         self._stats_service = None
+        self._voice_service = None
 
     async def run(self):
         """Запуск бота"""
         try:
             self._role_service = await self.container.get_role_service()
             self._stats_service = await self.container.get_stats_service()
+            self._voice_service = await self.container.get_voice_service()
 
             if self._role_service is None:
                 logger.error("Failed to get role service from container!")
@@ -79,6 +82,9 @@ class Bootstrap:
 
         self.bot.add_cog(StatsCog(self.bot, self._stats_service))
         logger.info("  ✅ StatsCog registered")
+
+        self.bot.add_cog(VoiceCog(self.bot, self._voice_service))
+        logger.info("  ✅ VoiceCog registered")
 
         logger.info("All cogs registered successfully")
         
