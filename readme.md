@@ -1,8 +1,8 @@
-# 🤖 Discord AI Moderation Bot
+# OmniBot
 
 <div align="center">
 
-**Discord бот с AI модерацией на Ollama (self-hosted LLM). Автовыдача ролей, мониторинг стримов Twitch/YouTube/Kick, динамические голосовые каналы, статистика сервера, логирование в SQLite, панель администратора, Dev Blog. Чистая архитектура, DI контейнер, systemd деплой. Python 3.12 + disnake.**
+**A Discord bot with self-hosted AI moderation through Ollama. Includes autoroles, interactive role panels, stream monitoring for Twitch/YouTube/Kick, dynamic voice rooms, server statistics, SQLite logging, admin tools, and Dev Blog publishing. Built with Python 3.12 + disnake using a clean architecture and dependency injection.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![disnake](https://img.shields.io/badge/disnake-2.9.2-green.svg)](https://github.com/DisnakeDev/disnake)
@@ -14,38 +14,38 @@
 
 ---
 
-## 📋 О проекте
+## About
 
-Этот бот создан для полной автоматизации управления Discord сервером. **Ключевая особенность** — self-hosted AI модерация через Ollama, что означает полный контроль над данными без отправки сообщений во внешние API.
+OmniBot is designed to automate Discord server management. Its key feature is **self-hosted AI moderation** through Ollama, which allows message classification without sending message content to commercial external AI APIs.
 
-### 🎯 Основные возможности
+## Key Features
 
-| Модуль                   | Описание                                                                  |
-| ------------------------ | ------------------------------------------------------------------------- |
-| 🧠 **AI Модерация**      | Локальная LLM (Mistral/Llama3/Phi3) для детекции спама, рекламы, буллинга |
-| 🎮 **Стрим-мониторинг**  | Twitch, YouTube, Kick — авто-анонсы при старте стрима                     |
-| 👥 **Роли**              | Автовыдача, интерактивные панели с кнопками                               |
-| 🔊 **Голосовые комнаты** | Динамическое создание, управление владельцем                              |
-| 📊 **Статистика**        | Топ активности, графики, счётчики в реальном времени                      |
-| 🛠️ **Админ-панель**     | Варны, муты, баны, очистка чата                                           |
-| 📝 **Логирование**       | Полный аудит сообщений и действий в SQLite                                |
-| 📰 **Dev Blog**          | Публикация постов с тегами и комментариями                                |
+| Module | Description |
+| --- | --- |
+| **AI Moderation** | Local LLM moderation for spam, ads, invites, bullying, violence, and NSFW detection |
+| **Streams** | Twitch, YouTube, and Kick stream announcements |
+| **Roles** | Autoroles and interactive role panels with buttons or reactions |
+| **Voice Rooms** | Dynamic voice rooms with owner controls |
+| **Statistics** | Server activity, leaderboards, voice time, and counters |
+| **Admin Tools** | Warnings, mutes, kicks, bans, chat cleanup, and slowmode |
+| **Logging** | Message, moderation, and server event logs in SQLite |
+| **Dev Blog** | Publish development posts with tags and archive support |
 
 ---
 
-## 🚀 Быстрый старт
+## Quick Start
 
-### Требования
+### Requirements
 
-| Компонент          | Минимум | Рекомендуется |
-| ------------------ | ------- | ------------- |
-| Python             | 3.12    | 3.12+         |
-| RAM (без AI)       | 2GB     | 4GB           |
-| RAM (с AI Mistral) | 8GB     | 16GB          |
-| Диск               | 10GB    | 20GB          |
-| ОС                 | Linux   | Ubuntu 22.04+ |
+| Component | Minimum | Recommended |
+| --- | --- | --- |
+| Python | 3.12 | 3.12+ |
+| RAM without AI | 2 GB | 4 GB |
+| RAM with Mistral | 8 GB | 16 GB |
+| Disk | 10 GB | 20 GB |
+| OS | Linux | Ubuntu 22.04+ |
 
-### Установка за 5 минут
+### Installation
 
 ```bash
 git clone https://github.com/6oT9lpa/discord-ai-moderation-bot.git
@@ -62,21 +62,21 @@ nano .env
 python main.py
 ```
 
-### Установка Ollama
+### Ollama Setup
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 
 ollama pull mistral
-# или
+# or
 ollama pull llama3
-# или
+# or
 ollama pull phi3:mini
 
 ollama list
 
 curl http://localhost:11434/api/generate \
--d '{"model":"mistral","prompt":"Hello"}'
+  -d '{"model":"mistral","prompt":"Hello"}'
 ```
 
 ### Docker
@@ -87,146 +87,202 @@ docker-compose up -d
 
 ---
 
-# 📦 Модули
+## Modules
 
-## 🤖 AI Модерация
+### AI Moderation
 
-```bash
+Example commands:
+
+```text
 /ai-stats
 /ai-whitelist add #chat
 /ai-threshold set 0.85
 ```
 
-Определяет:
+Supported categories:
 
-* SPAM
-* ADVERTISEMENT
-* INVITE
-* VIOLENCE
-* BULLYING
-* NSFW
+- `SPAM`
+- `ADVERTISEMENT`
+- `INVITE`
+- `VIOLENCE`
+- `BULLYING`
+- `NSFW`
+- `SAFE`
 
----
+AI moderation is intended as an assistive tool. Moderators should review disputed detections manually.
 
-## 🛡️ Роли и автовыдача
+### Roles and Autoroles
 
-```bash
-/role-panel setup #роли
-/role-panel add @Геймер
-/role-autoassign set @Участник
+```text
+/role-panel setup #roles
+/role-panel add @Gamer
+/role-autoassign set @Member
 /roles-list
 ```
 
----
+Features:
 
-## 📺 Стримы и публикации
+- automatic base role assignment on member join;
+- interactive role panels with buttons;
+- reaction/emoji role support;
+- safe role hierarchy checks.
 
-```bash
+### Streams and Publications
+
+```text
 /streamer add twitch https://twitch.tv/nick
 /stream-template set
 /subscribe youtube UCxxxxx
 ```
 
-Поддерживаются:
+Supported platforms:
 
-* Twitch
-* YouTube
-* Kick
+- Twitch;
+- YouTube;
+- Kick;
+- TikTok/RSS when configured.
 
----
+### Dynamic Voice Rooms
 
-## 🔊 Голосовые каналы
-
-```bash
-/room name "Моя комната"
+```text
+/room name "My Room"
 /room limit 5
 /room lock
+/room unlock
 /room transfer @user
 ```
 
----
+Features:
 
-## 📊 Статистика
+- temporary room creation from a trigger channel;
+- owner controls;
+- user limit;
+- lock/unlock;
+- ownership transfer;
+- automatic cleanup of empty temporary rooms.
 
-```bash
+### Statistics
+
+```text
 /stats server
 /stats user @user
+/stats channels
 /leaderboard
 ```
 
----
+Tracked metrics may include:
 
-## 🛠️ Администрирование
+- message count;
+- active users;
+- active channels;
+- voice minutes;
+- top users;
+- top channels;
+- member joins and leaves.
 
-```bash
-/warn @user причина
-/mute @user 10m причина
-/kick @user причина
-/ban @user причина
+### Administration and Moderation
+
+```text
+/warn @user reason
+/mute @user 10m reason
+/unmute @user
+/kick @user reason
+/ban @user reason
+/unban user_id
 /purge 50
 /slowmode #chat 5
 ```
 
----
+Moderation actions are stored in SQLite and can be reviewed through history commands.
 
-## 📝 Логирование
+### Logging
 
-Сохраняются:
+The Bot can store and publish logs for:
 
-* сообщения
-* удаления сообщений
-* изменения сообщений
-* вход/выход участников
-* наказания
-* изменения ролей
+- messages;
+- deleted messages;
+- edited messages;
+- member joins and leaves;
+- punishments;
+- role changes;
+- voice events;
+- channel and role updates.
 
-База данных: SQLite
+Database: SQLite.
 
----
+Default retention:
 
-## 📰 Dev Blog
+- message logs: 30 days;
+- expired punishment history: 365 days;
+- retention cleanup interval: 6 hours.
 
-```bash
+### Dev Blog
+
+```text
 /blog post
 /blog list --tag dev
+/blog edit post_id
+/blog delete post_id
 /blog archive
 ```
 
+Features:
+
+- embed-based posts;
+- tags;
+- image URLs;
+- pinned posts;
+- Markdown archive export.
+
 ---
 
-# ⚙️ Конфигурация
+## Configuration
 
-## .env
+### `.env`
 
 ```env
-TOKEN=your_discord_bot_token_here
-GUILD_ID=123456789012345678
-OWNER_ID=987654321098765432
+DISCORD_TOKEN=your_discord_bot_token_here
+DISCORD_GUILD_ID=123456789012345678
+DISCORD_OWNER_ID=987654321098765432
+
+DATABASE_URL=sqlite:///data/nexsusguard.db
+
+AUTO_ROLE_ID=123456789012345678
+LOG_CHANNEL_ID=123456789012345678
+WELCOME_CHANNEL_ID=123456789012345678
+
+LOG_LEVEL=INFO
+MESSAGE_LOG_RETENTION_DAYS=30
+PUNISHMENT_RETENTION_DAYS=365
+RETENTION_CLEANUP_INTERVAL_HOURS=6
 
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=mistral
 
 TWITCH_CLIENT_ID=your_twitch_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
-
 YOUTUBE_API_KEY=your_youtube_key
 ```
 
-### Настройка через Discord
+### Discord Configuration
 
-```bash
+Useful commands may include:
+
+```text
 /bot config view
 /bot config set KEY value
 /bot reload cog
 /bot status
+/bot uptime
+/bot ping
 ```
 
 ---
 
-# 🐳 Docker Compose
+## Docker Compose Example
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   bot:
@@ -253,13 +309,13 @@ services:
 
 ---
 
-# 🔧 Деплой на VPS
+## VPS Deployment
 
-## Systemd сервис
+### systemd Service
 
 ```ini
 [Unit]
-Description=Discord AI Moderation Bot
+Description=OmniBot
 After=network.target ollama.service
 
 [Service]
@@ -275,7 +331,7 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-### Управление
+### Service Management
 
 ```bash
 sudo systemctl enable discord-bot
@@ -283,9 +339,7 @@ sudo systemctl start discord-bot
 sudo systemctl status discord-bot
 ```
 
----
-
-## Ежедневные бэкапы
+### Daily SQLite Backups
 
 ```cron
 0 3 * * * sqlite3 /opt/discord-bot/data/bot.db ".backup '/opt/discord-bot/backups/bot_$(date +\%Y\%m\%d).db'"
@@ -293,7 +347,7 @@ sudo systemctl status discord-bot
 
 ---
 
-# 🏗️ Архитектура
+## Project Structure
 
 ```text
 discord-ai-moderation-bot/
@@ -307,71 +361,89 @@ discord-ai-moderation-bot/
 └── requirements.txt
 ```
 
-### Используемые подходы
+Architecture patterns:
 
-* Clean Architecture
-* Dependency Injection
-* Repository Pattern
-* Service Layer
-* SQLite Persistence
-
----
-
-# 📊 Мониторинг
-
-| Команда                        | Назначение           |
-| ------------------------------ | -------------------- |
-| `/bot uptime`                  | Время работы         |
-| `/bot ping`                    | Задержка Discord API |
-| `/ai-stats`                    | Статистика AI        |
-| `journalctl -u discord-bot -f` | Просмотр логов       |
+- Clean Architecture;
+- Dependency Injection;
+- Repository Pattern;
+- Service Layer;
+- SQLite persistence.
 
 ---
 
-# ❓ FAQ
+## Monitoring
 
-### Бот не видит сообщения
+| Command | Purpose |
+| --- | --- |
+| `/bot uptime` | Bot uptime |
+| `/bot ping` | Discord API latency |
+| `/ai-stats` | AI moderation statistics |
+| `journalctl -u discord-bot -f` | Live systemd logs |
 
-Включите в Discord Developer Portal:
+---
 
-* MESSAGE CONTENT INTENT
-* SERVER MEMBERS INTENT
+## FAQ
 
-### AI не работает
+### The Bot Cannot See Messages
+
+Enable these intents in the Discord Developer Portal:
+
+- `MESSAGE CONTENT INTENT`;
+- `SERVER MEMBERS INTENT`.
+
+Also make sure the Bot has channel permissions:
+
+- View Channels;
+- Read Message History;
+- Send Messages.
+
+### AI Moderation Does Not Work
+
+Check Ollama:
 
 ```bash
 systemctl status ollama
 ollama pull mistral
 
 curl http://localhost:11434/api/generate \
--d '{"model":"mistral","prompt":"Hi"}'
+  -d '{"model":"mistral","prompt":"Hi"}'
 ```
 
-### Бот не выдаёт роли
+### The Bot Does Not Assign Roles
 
-Роль бота должна находиться выше выдаваемых ролей.
+The Bot's highest role must be above the roles it assigns. The Bot also needs the `Manage Roles` permission.
 
-### database is locked
+### `database is locked`
+
+Try enabling WAL mode:
 
 ```sql
 PRAGMA journal_mode=WAL;
 ```
 
+Also check that only one Bot instance is writing to the same SQLite database.
+
 ---
 
-# 🧪 Тестирование
+## Documentation
+
+- [Privacy Policy](./docs/PRIVACY_POLICY.md)
+- [Terms of Service](./docs/TERMS_OF_SERVICE.md)
+- [Knowledge Base](./docs/KNOWLEDGE_BASE.md)
+
+---
+
+## Testing
 
 ```bash
-pytest tests/unit -v
-
+pytest tests -v
 pytest --cov=. --cov-report=html
-
 pytest tests/unit/test_ai_moderation.py -v
 ```
 
 ---
 
-# 📄 Лицензия
+## License
 
 MIT License
 
@@ -379,18 +451,18 @@ Copyright (c) 2025-2026 6oT9lpa
 
 ---
 
-# 🌟 Поддержка
+## Support
 
-* GitHub Issues
-* Pull Requests
-* Discussions
+- GitHub Issues
+- Pull Requests
+- Discussions
 
-Автор: **6oT9lpa**
+Author: **6oT9lpa**
 
 <div align="center">
 
-⭐ Если проект оказался полезным, поставьте звезду репозиторию ⭐
+If this project is useful, consider starring the repository.
 
-Built with ❤️ for Discord Communities
+Built for Discord communities.
 
 </div>
