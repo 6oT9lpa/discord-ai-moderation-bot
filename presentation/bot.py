@@ -1,6 +1,9 @@
 import asyncio
+import random
+from dataclasses import dataclass
+
 import disnake
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 
 from infrastructure.config import BotConfig
 from infrastructure.logging import get_logger
@@ -8,28 +11,40 @@ from infrastructure.logging import get_logger
 logger = get_logger(__name__)
 
 
+@dataclass(frozen=True)
+class PresenceItem:
+    activity_type: str
+    name: str
+    status: disnake.Status
+
+
 class DiscordBot(commands.Bot):
     def __init__(
         self,
         config: BotConfig,
         role_service=None,
-        stats_service=None
+        stats_service=None,
     ):
         self._config = config
         self._role_service = role_service
         self._stats_service = stats_service
+        self._presence_items = self._load_presence_items()
+        self._presence_index = random.randrange(len(self._presence_items))
 
         intents = disnake.Intents.default()
         intents.message_content = True
         intents.members = True
         intents.voice_states = True
 
+        initial_presence = self._presence_items[self._presence_index]
+
         super().__init__(
             command_prefix=self._config.command_prefix,
             intents=intents,
-            activity=disnake.Game(name=self._config.activity_name),
-            status=disnake.Status.online,
+            activity=self._build_activity(initial_presence),
+            status=initial_presence.status,
             test_guilds=[self._config.discord_guild_id],
+            proxy=self._config.discord_proxy_url,
         )
 
         self._ready = asyncio.Event()
@@ -58,6 +73,8 @@ class DiscordBot(commands.Bot):
                     await self._role_service.sync_roles(self.guilds[0])
                 except Exception as e:
                     logger.error(f"Failed to sync roles: {e}")
+
+            await self._start_presence_rotation()
 
     async def on_application_command_error(self, interaction: disnake.Interaction, error: Exception):
         logger.error("Application command error command=%s error=%s", getattr(interaction, "command", None), error, exc_info=True)
@@ -92,4 +109,169 @@ class DiscordBot(commands.Bot):
     async def close(self):
         """Закрытие бота"""
         logger.info("Closing bot...")
+        if self._presence_rotator.is_running():
+            self._presence_rotator.cancel()
         await super().close()
+
+    async def _start_presence_rotation(self):
+        if not self._config.activity_rotation_enabled or len(self._presence_items) < 2:
+            await self._apply_presence(self._presence_items[self._presence_index])
+            return
+
+        self._presence_rotator.change_interval(
+            seconds=self._config.activity_rotation_interval_seconds
+        )
+
+        if not self._presence_rotator.is_running():
+            await self._apply_presence(self._presence_items[self._presence_index])
+            self._presence_rotator.start()
+            logger.info(
+                "Presence rotation started: %s items, %s seconds interval",
+                len(self._presence_items),
+                self._config.activity_rotation_interval_seconds,
+            )
+
+    @tasks.loop(seconds=60)
+    async def _presence_rotator(self):
+        self._presence_index = (self._presence_index + 1) % len(self._presence_items)
+        await self._apply_presence(self._presence_items[self._presence_index])
+
+    @_presence_rotator.before_loop
+    async def _before_presence_rotator(self):
+        await self.wait_until_ready()
+
+    async def _apply_presence(self, item: PresenceItem):
+        await self.change_presence(
+            activity=self._build_activity(item),
+            status=item.status,
+        )
+
+    def _load_presence_items(self) -> list[PresenceItem]:
+        configured_items = self._parse_presence_activities(
+            self._config.presence_activities
+        )
+        if configured_items:
+            return configured_items
+
+        default_status = self._parse_status(self._config.bot_status)
+        activity_name = self._config.activity_name.strip() or "Omnibot | центр управления"
+
+        return [
+            PresenceItem("playing", activity_name, default_status),
+            PresenceItem("watching", "щит Omnibot над {members} участниками", disnake.Status.online),
+            PresenceItem("listening", "/help | роли, логи, голосовые комнаты", disnake.Status.idle),
+            PresenceItem("competing", "DDoS-штормами | аудитом гос-архитектур", disnake.Status.dnd),
+            PresenceItem("watching", "пульс сервера: роли, входы, события", disnake.Status.online),
+            PresenceItem("playing", "Omnibot OS | порядок без шума", disnake.Status.online),
+            PresenceItem("listening", "модераторов и тревожные сигналы", disnake.Status.idle),
+            PresenceItem("competing", "за чистый чат и спокойный сервер", disnake.Status.dnd),
+        ]
+
+    def _parse_presence_activities(self, raw_activities: str) -> list[PresenceItem]:
+        if not raw_activities.strip():
+            return []
+
+        items = []
+        default_status = self._parse_status(self._config.bot_status)
+
+        for raw_item in raw_activities.replace("\n", ";").split(";"):
+            raw_item = raw_item.strip()
+            if not raw_item:
+                continue
+
+            status = default_status
+            activity_type = "playing"
+            name = raw_item
+            parts = [part.strip() for part in raw_item.split(":", 2)]
+
+            if len(parts) == 3 and self._is_status(parts[0]):
+                status = self._parse_status(parts[0])
+                activity_type = parts[1]
+                name = parts[2]
+            elif len(parts) >= 2:
+                activity_type = parts[0]
+                name = parts[1]
+
+            if not name:
+                continue
+
+            items.append(
+                PresenceItem(
+                    self._normalize_activity_type(activity_type),
+                    name,
+                    status,
+                )
+            )
+
+        return items
+
+    def _build_activity(self, item: PresenceItem):
+        name = self._format_presence_text(item.name)
+
+        if item.activity_type == "watching":
+            return disnake.Activity(type=disnake.ActivityType.watching, name=name)
+        if item.activity_type == "listening":
+            return disnake.Activity(type=disnake.ActivityType.listening, name=name)
+        if item.activity_type == "competing":
+            return disnake.Activity(type=disnake.ActivityType.competing, name=name)
+
+        return disnake.Game(name=name)
+
+    def _format_presence_text(self, text: str) -> str:
+        try:
+            guilds = self.guilds
+        except AttributeError:
+            guilds = []
+
+        member_count = sum(guild.member_count or 0 for guild in guilds)
+        if member_count == 0:
+            member_count = sum(len(guild.members) for guild in guilds)
+
+        values = {
+            "guilds": len(guilds),
+            "members": member_count,
+            "prefix": self._config.command_prefix,
+        }
+
+        try:
+            formatted = text.format(**values)
+        except (KeyError, ValueError):
+            formatted = text
+
+        return formatted[:128]
+
+    def _normalize_activity_type(self, activity_type: str) -> str:
+        activity_type = activity_type.strip().lower()
+        aliases = {
+            "game": "playing",
+            "play": "playing",
+            "playing": "playing",
+            "watch": "watching",
+            "watching": "watching",
+            "listen": "listening",
+            "listening": "listening",
+            "compete": "competing",
+            "competing": "competing",
+        }
+        return aliases.get(activity_type, "playing")
+
+    def _parse_status(self, status: str) -> disnake.Status:
+        statuses = {
+            "online": disnake.Status.online,
+            "idle": disnake.Status.idle,
+            "dnd": disnake.Status.dnd,
+            "do_not_disturb": disnake.Status.dnd,
+            "invisible": disnake.Status.invisible,
+            "offline": disnake.Status.invisible,
+        }
+        return statuses.get(status.strip().lower(), disnake.Status.online)
+
+    def _is_status(self, value: str) -> bool:
+        return value.strip().lower() in {
+            "online",
+            "idle",
+            "dnd",
+            "do_not_disturb",
+            "invisible",
+            "offline",
+        }

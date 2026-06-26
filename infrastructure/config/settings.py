@@ -8,6 +8,7 @@ class BotConfig(BaseSettings):
     discord_token: SecretStr = Field(..., env="DISCORD_TOKEN")
     discord_guild_id: int = Field(..., env="DISCORD_GUILD_ID")
     discord_owner_id: int = Field(..., env="DISCORD_OWNER_ID")
+    discord_proxy_url: Optional[str] = Field(None, env="DISCORD_PROXY_URL")
 
     # Database
     database_url: str = Field(..., env="DATABASE_URL")
@@ -27,7 +28,11 @@ class BotConfig(BaseSettings):
     retention_cleanup_interval_hours: int = Field(6, env="RETENTION_CLEANUP_INTERVAL_HOURS")
 
     command_prefix: str = Field("!", env="COMMAND_PREFIX")
-    activity_name: str = Field("playing in vscode", env="ACTIVITY_NAME")
+    activity_name: str = Field("Omnibot | центр управления", env="ACTIVITY_NAME")
+    bot_status: str = Field("online", env="BOT_STATUS")
+    activity_rotation_enabled: bool = Field(True, env="ACTIVITY_ROTATION_ENABLED")
+    activity_rotation_interval_seconds: int = Field(60, env="ACTIVITY_ROTATION_INTERVAL_SECONDS")
+    presence_activities: str = Field("", env="PRESENCE_ACTIVITIES")
 
     class Config:
         env_file = ".env"
@@ -48,5 +53,12 @@ class BotConfig(BaseSettings):
     def parse_id(cls, v):
         if isinstance(v, str):
             return int(v.strip())
+        return v
+
+    @field_validator('activity_rotation_interval_seconds')
+    @classmethod
+    def validate_activity_rotation_interval(cls, v: int) -> int:
+        if v < 15:
+            raise ValueError('Activity rotation interval must be at least 15 seconds')
         return v
     
