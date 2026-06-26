@@ -7,6 +7,7 @@ from core.interfaces.services.logging_service_interface import LoggingServiceInt
 from core.interfaces.services.channel_service_interface import ChannelServiceInterface
 from core.interfaces.services.stats_service_interface import StatsServiceInterface
 from core.interfaces.services.voice_service_interface import VoiceServiceInterface
+from core.interfaces.services.server_role_purpose_service_interface import ServerRolePurposeServiceInterface
 
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     'LoggingServiceInterface',
     'ChannelServiceInterface',
     'StatsServiceInterface',
-    'VoiceServiceInterface'
+    'VoiceServiceInterface',
+    'ServerRolePurposeServiceInterface'
 ]

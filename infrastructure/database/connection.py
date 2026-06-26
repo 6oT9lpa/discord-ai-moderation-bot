@@ -214,6 +214,7 @@ class DatabaseManager:
         await self._create_voice_config_table()
         await self._ensure_messages_columns()
         await self._create_voice_sessions_table()
+        await self._create_server_role_purposes_table()
 
         logger.info("All tables created successfully")
 
@@ -667,3 +668,26 @@ class DatabaseManager:
         await self._connection.execute("CREATE INDEX IF NOT EXISTS idx_vs_left ON voice_sessions(left_at)")
         await self.commit()
         logger.info("Created voice_sessions table")
+
+    async def _create_server_role_purposes_table(self) -> None:
+        await self._connection.execute("""
+            CREATE TABLE IF NOT EXISTS server_role_purposes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id INTEGER NOT NULL,
+                purpose TEXT NOT NULL,
+                role_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                UNIQUE(guild_id, purpose)
+            )
+        """)
+        await self._connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_srp_guild
+            ON server_role_purposes(guild_id)
+        """)
+        await self._connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_srp_purpose
+            ON server_role_purposes(purpose)
+        """)
+        await self.commit()
+        logger.info("Created server_role_purposes table")

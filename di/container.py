@@ -13,7 +13,8 @@ from infrastructure.database import (
     GuildEventLogRepository,
     PunishmentRepository,
     StatsRepository,
-    VoiceRepository
+    VoiceRepository,
+    ServerRolePurposeRepository
 )
 from application.services import (
     RoleService,
@@ -24,7 +25,8 @@ from application.services import (
     ModerationHistoryService,
     ModeratorService,
     VoiceService,
-    StatsService
+    StatsService,
+    ServerRolePurposeService
 )
 from infrastructure.logging import get_logger
 from di.modules import MemberEventsModule, LoggingModule, ModerationModule
@@ -43,6 +45,7 @@ class Container:
         self._stats_repo: Optional[StatsRepository] = None
         self._voice_service: Optional[VoiceService] = None
         self._voice_repo: Optional[VoiceRepository] = None
+        self._server_role_purpose_repo: Optional[ServerRolePurposeRepository] = None
         self._panel_message_repo: Optional[RolePanelMessageRepository] = None
         self._panel_button_repo: Optional[RolePanelButtonRepository] = None
         self._channel_config_repo: Optional[ChannelConfigRepository] = None
@@ -56,6 +59,7 @@ class Container:
         self._logging_service: Optional[LoggingService] = None
         self._moderation_history_service: Optional[ModerationHistoryService] = None
         self._moderator_service: Optional[ModeratorService] = None
+        self._server_role_purpose_service: Optional[ServerRolePurposeService] = None
         self._member_events_module: Optional[MemberEventsModule] = None
         self._logging_module: Optional[LoggingModule] = None
         self._moderation_module: Optional[ModerationModule] = None
@@ -130,6 +134,12 @@ class Container:
             self._voice_repo = VoiceRepository(db)
         return self._voice_repo
 
+    async def get_server_role_purpose_repository(self) -> ServerRolePurposeRepository:
+        if not self._server_role_purpose_repo:
+            db = await self.get_database()
+            self._server_role_purpose_repo = ServerRolePurposeRepository(db)
+        return self._server_role_purpose_repo
+
     #=============== Service =====================
 
     async def get_stats_service(self) -> StatsService:
@@ -143,6 +153,13 @@ class Container:
             repo = await self.get_voice_repository()
             self._voice_service = VoiceService(repo)
         return self._voice_service
+
+    async def get_server_role_purpose_service(self) -> ServerRolePurposeService:
+        if not self._server_role_purpose_service:
+            repo = await self.get_server_role_purpose_repository()
+            self._server_role_purpose_service = ServerRolePurposeService(repo)
+            logger.info("ServerRolePurposeService created")
+        return self._server_role_purpose_service
 
     async def get_role_service(self) -> RoleService:
         if not self._role_service:

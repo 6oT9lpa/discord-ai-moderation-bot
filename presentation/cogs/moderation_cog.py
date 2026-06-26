@@ -3,8 +3,15 @@ from disnake.ext import commands
 from typing import Optional
 
 from application.schemas.moderation_schemas import BanCommandSchema, WarnCommandSchema, KickCommandSchema, ReasonSchema, UserIdSchema, MuteCommandSchema
+from application.schemas.server_role_purpose_schemas import ServerRolePurposeSchema
 from presentation.views.moderation_views import PunishmentListView
-from application.services import ModerationHistoryService, ModeratorService, LoggingService
+from application.services import (
+    LoggingService,
+    ModerationHistoryService,
+    ModeratorService,
+    ServerRolePurposeService,
+)
+from core.domain.server_role_purpose import ServerRolePurpose
 from core.domain.value_objects import PunishmentType
 from infrastructure.logging import get_logger
 
@@ -17,10 +24,12 @@ class ModerationCog(commands.Cog):
         moderator_service: ModeratorService,
         history_service: ModerationHistoryService,
         logging_service: Optional[LoggingService] = None,
+        server_role_purpose_service: Optional[ServerRolePurposeService] = None,
     ):
         self._moderator_service = moderator_service
         self._history_service = history_service
         self._logging_service = logging_service
+        self._server_role_purpose_service = server_role_purpose_service
 
     def cog_load(self):
         logger.info("ModerationCog loaded")
@@ -572,6 +581,73 @@ class ModerationCog(commands.Cog):
         )
 
         await interaction.edit_original_response(embed=embed)
+
+    @commands.slash_command(
+        name="activity_role",
+        description="Set a Discord role used by Omnibot Activity access",
+    )
+    @commands.has_permissions(administrator=True)
+    async def set_activity_role(
+        self,
+        ctx: disnake.ApplicationCommandInteraction,
+        kind: str = commands.Param(
+            description="Activity role type",
+            choices={
+                "streamer": ServerRolePurpose.ACTIVITY_STREAMER.value,
+                "developer": ServerRolePurpose.ACTIVITY_DEVELOPER.value,
+            },
+        ),
+        role: disnake.Role = commands.Param(description="Discord role"),
+    ):
+        if not self._server_role_purpose_service:
+            await ctx.response.send_message(
+                "Activity role service is not configured.",
+                ephemeral=True,
+            )
+            return
+
+        if role.is_default() or role.managed:
+            await ctx.response.send_message(
+                "This role cannot be used for Activity access.",
+                ephemeral=True,
+            )
+            return
+
+        if ctx.guild.me and ctx.guild.me.top_role.position <= role.position:
+            await ctx.response.send_message(
+                "Move the bot role above this role before using it in Activity.",
+                ephemeral=True,
+            )
+            return
+
+        purpose = ServerRolePurpose(kind)
+        validated = self._validate(
+            ServerRolePurposeSchema,
+            {
+                "guild_id": ctx.guild.id,
+                "purpose": purpose,
+                "role_id": role.id,
+            },
+        )
+
+        await self._server_role_purpose_service.set_role(
+            validated.guild_id,
+            validated.purpose,
+            validated.role_id,
+        )
+
+        await ctx.response.send_message(
+            embed=disnake.Embed(
+                title="Activity role updated",
+                description=(
+                    f"Type: **{validated.purpose.value}**\n"
+                    f"Role: {role.mention}\n"
+                    f"Role ID: `{role.id}`"
+                ),
+                color=disnake.Color.green(),
+            ),
+            ephemeral=True,
+        )
 
     async def _execute_moderation(
         self,

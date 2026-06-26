@@ -7,6 +7,7 @@ from application.services.role_service import RoleService
 from application.services.welcome_service import WelcomeService
 from application.services.stats_service import StatsService
 from application.services.voice_service import VoiceService
+from application.services.server_role_purpose_service import ServerRolePurposeService
 
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     'RoleService',
     'WelcomeService',
     'StatsService',
-    'VoiceService'
+    'VoiceService',
+    'ServerRolePurposeService'
 ]

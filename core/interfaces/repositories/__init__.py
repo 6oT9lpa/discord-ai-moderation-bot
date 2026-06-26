@@ -8,6 +8,7 @@ from core.interfaces.repositories.message_log_repository_interface import Messag
 from core.interfaces.repositories.punishment_repository_interface import PunishmentRepositoryInterface
 from core.interfaces.repositories.stats_repository_interface import StatsRepositoryInterface
 from core.interfaces.repositories.voice_repository_interface import VoiceRepositoryInterface
+from core.interfaces.repositories.server_role_purpose_repository_interface import ServerRolePurposeRepositoryInterface
 
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     'MessageLogRepositoryInterface',
     'PunishmentRepositoryInterface',
     'StatsRepositoryInterface',
-    'VoiceRepositoryInterface'
+    'VoiceRepositoryInterface',
+    'ServerRolePurposeRepositoryInterface'
 ]

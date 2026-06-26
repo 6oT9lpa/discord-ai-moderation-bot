@@ -6,6 +6,7 @@ from infrastructure.database.repositories.role_panel_message_repository import R
 from infrastructure.database.repositories.role_panel_button_repository import RolePanelButtonRepository
 from infrastructure.database.repositories.channel_config_repository import ChannelConfigRepository
 from infrastructure.database.repositories.welcome_config_repository import WelcomeConfigRepository
+from infrastructure.database.repositories.server_role_purpose_repository import ServerRolePurposeRepository
 from core.domain.channel_purpose import ChannelPurpose
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'RolePanelButtonRepository',
     'ChannelConfigRepository',
     'ChannelPurpose',
-    'WelcomeConfigRepository'
+    'WelcomeConfigRepository',
+    'ServerRolePurposeRepository'
 ]

@@ -2,6 +2,7 @@ from application.dto.logging_dto import DeletedMessageDTO, EditedMessageDTO, Bul
 from application.dto.moderation_dto import PunishmentDTO, PunishmentResultDTO, UserHistoryDTO
 from application.dto.stats_dto import UserStatsDTO, ServerStatsDTO, MessageHistoryDTO
 from application.dto.voice_dto import VoiceRoomDTO, VoiceRoomTransferDTO
+from application.dto.server_role_purpose_dto import ServerRolePurposeDTO
 
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'ServerStatsDTO',
     'MessageHistoryDTO',
     'VoiceRoomTransferDTO',
-    'VoiceRoomDTO'
+    'VoiceRoomDTO',
+    'ServerRolePurposeDTO'
 ]

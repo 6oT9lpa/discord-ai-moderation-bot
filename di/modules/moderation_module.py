@@ -2,7 +2,12 @@ from typing import Optional
 
 from disnake.ext import commands
 
-from application.services import ModerationHistoryService, ModeratorService, LoggingService
+from application.services import (
+    LoggingService,
+    ModerationHistoryService,
+    ModeratorService,
+    ServerRolePurposeService,
+)
 from infrastructure.logging import get_logger
 from presentation.cogs import ModerationCog
 
@@ -23,6 +28,9 @@ class ModerationModule:
     async def get_logging_service(self) -> LoggingService:
         return await self._container.get_logging_service()
 
+    async def get_server_role_purpose_service(self) -> ServerRolePurposeService:
+        return await self._container.get_server_role_purpose_service()
+
     async def get_cog(self, bot: commands.Bot) -> Optional[ModerationCog]:
         if self._cog:
             return self._cog
@@ -31,7 +39,13 @@ class ModerationModule:
             moderator_service = await self.get_moderator_service()
             history_service = await self.get_history_service()
             logging_service = await self.get_logging_service()
-            self._cog = ModerationCog(moderator_service, history_service, logging_service)
+            server_role_purpose_service = await self.get_server_role_purpose_service()
+            self._cog = ModerationCog(
+                moderator_service,
+                history_service,
+                logging_service,
+                server_role_purpose_service,
+            )
             logger.info("ModerationCog created and configured")
             return self._cog
         except Exception as exc:
