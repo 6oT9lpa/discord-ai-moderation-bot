@@ -11,10 +11,8 @@ defineProps<{
 <template>
   <section class="panel-section">
     <div class="section-heading">
-      <div>
-        <span>Audit stream</span>
-        <h2>Recent Activity</h2>
-      </div>
+      <span>Audit stream</span>
+      <h2>Recent Activity</h2>
       <RouterLink v-if="actionLabel && actionTo" class="ghost-button" :to="actionTo">{{ actionLabel }}</RouterLink>
     </div>
     <div class="timeline">

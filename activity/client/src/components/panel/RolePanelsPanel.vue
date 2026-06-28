@@ -27,9 +27,9 @@ async function toggleAssignment(discordRoleId: string, accessRoleId: number, ena
 <template>
   <section class="panel-section">
     <div class="section-heading role-panel-heading">
+      <span>Role Panels</span>
+      <h2>Discord roles mapped to Activity roles.</h2>
       <div>
-        <span>Role Panels</span>
-        <h2>Discord roles mapped to Activity roles.</h2>
         <p>Synced roles keep Discord permissions, while Activity roles define panel access.</p>
       </div>
       <button class="ghost-button" type="button" :disabled="activity.moduleLoading" @click="activity.syncRolesFromDiscord">
@@ -53,11 +53,14 @@ async function toggleAssignment(discordRoleId: string, accessRoleId: number, ena
               <span>{{ role.is_admin ? "Discord Administrator" : `permissions: ${role.permissions}` }}</span>
             </td>
             <td v-for="accessRole in availableRoles" :key="`${role.role_id}-${accessRole.id}`">
-              <input
-                type="checkbox"
-                :checked="hasAssignment(role.role_id, accessRole.id)"
-                @change="toggleAssignment(role.role_id, accessRole.id, ($event.target as HTMLInputElement).checked)"
-              />
+              <label class="role-check">
+                <input
+                  type="checkbox"
+                  :checked="hasAssignment(role.role_id, accessRole.id)"
+                  @change="toggleAssignment(role.role_id, accessRole.id, ($event.target as HTMLInputElement).checked)"
+                />
+                <span aria-hidden="true"></span>
+              </label>
             </td>
           </tr>
         </tbody>

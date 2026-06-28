@@ -15,6 +15,7 @@ const devBlogDraft = reactive({
   title: "OmniBot Activity update",
   content: "",
   status: "published" as "draft" | "published",
+  image_render_mode: "gallery_bottom" as "gallery_bottom" | "inline_between_text",
   embeds: [{ title: "Release note", description: "Write the first embed body.", image_url: "", color: 0x5865f2 }],
 });
 const savedDrafts = computed(() => activity.devBlogPosts.filter((post) => post.status === "draft").slice(0, 10));
@@ -42,6 +43,7 @@ async function saveDevBlog(status: "draft" | "published") {
       title: devBlogDraft.title,
       content: devBlogDraft.content || null,
       status,
+      image_render_mode: devBlogDraft.image_render_mode,
       embeds: devBlogDraft.embeds.map((embed) => ({
         title: embed.title || null,
         description: embed.description,
@@ -66,6 +68,7 @@ function loadDraft(post: Record<string, unknown>) {
   const payload = parsePayload(post.payload_json);
   devBlogDraft.title = String(post.title || devBlogDraft.title);
   devBlogDraft.content = typeof payload.content === "string" ? payload.content : "";
+  devBlogDraft.image_render_mode = payload.image_render_mode === "inline_between_text" ? "inline_between_text" : "gallery_bottom";
   devBlogDraft.status = "draft";
   devBlogDraft.embeds.splice(0, devBlogDraft.embeds.length, ...normalizeEmbeds(payload.embeds));
   saving.message = "Draft loaded";
@@ -90,7 +93,7 @@ function normalizeEmbeds(value: unknown): DevBlogEditorEmbed[] {
     return {
       title: typeof source.title === "string" ? source.title : "",
       description: typeof source.description === "string" ? source.description : "",
-      image_url: typeof image?.url === "string" ? image.url : "",
+      image_url: typeof source.image_url === "string" ? source.image_url : typeof image?.url === "string" ? image.url : "",
       color: typeof source.color === "number" ? source.color : 0x5865f2,
     };
   });
@@ -103,6 +106,9 @@ function normalizeEmbeds(value: unknown): DevBlogEditorEmbed[] {
       <div class="section-heading">
         <span>Developer publishing</span>
         <h2>Compose a multi-embed Dev Blog update.</h2>
+        <div>
+          <p>Build up to 10 embeds and publish them as one Discord message.</p>
+        </div>
       </div>
       <label>
         Title
@@ -111,6 +117,14 @@ function normalizeEmbeds(value: unknown): DevBlogEditorEmbed[] {
       <label>
         Message content
         <textarea v-model="devBlogDraft.content" rows="3" maxlength="2000" />
+      </label>
+      <label class="toggle-row">
+        <input
+          type="checkbox"
+          :checked="devBlogDraft.image_render_mode === 'inline_between_text'"
+          @change="devBlogDraft.image_render_mode = ($event.target as HTMLInputElement).checked ? 'inline_between_text' : 'gallery_bottom'"
+        />
+        <span>Insert images between text blocks</span>
       </label>
       <div class="embed-stack">
         <article v-for="(embed, index) in devBlogDraft.embeds" :key="index" class="embed-editor">
@@ -168,12 +182,16 @@ function normalizeEmbeds(value: unknown): DevBlogEditorEmbed[] {
         <small>{{ embed.image_url || "No image" }}</small>
       </div>
       <footer><span>{{ devBlogDraft.embeds.length }}/10 embeds</span><span>#{{ channelName(activity.channelPurposes.dev_blog) }}</span></footer>
+      <small>{{ devBlogDraft.image_render_mode === "inline_between_text" ? "Images render between matching text blocks." : "Images collect in one gallery at the bottom." }}</small>
     </article>
   </section>
   <section class="panel-section">
     <div class="section-heading">
       <span>Publishing history</span>
       <h2>Saved Dev Blog posts.</h2>
+      <div>
+        <p>Load drafts back into the editor or review recently published updates.</p>
+      </div>
     </div>
     <div v-if="savedDrafts.length" class="draft-button-row">
       <button

@@ -134,10 +134,12 @@ watch(
           <div class="section-heading">
             <span>Module workspace</span>
             <h2>{{ activeTitle }} is scaffolded for the next integration pass.</h2>
-            <p>
-              The navigation, permission guard and module shell are ready. The next step
-              is connecting this workspace to its repository/service/API implementation.
-            </p>
+            <div>
+              <p>
+                The navigation, permission guard and module shell are ready. The next step
+                is connecting this workspace to its repository/service/API implementation.
+              </p>
+            </div>
           </div>
           <div class="empty-module">
             <strong>{{ activeTitle }}</strong>

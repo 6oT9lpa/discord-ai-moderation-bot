@@ -46,7 +46,9 @@ function setAccessValue(roleId: number, modules: Record<ModuleKey, PermissionLev
     <div class="section-heading">
       <span>Access Roles</span>
       <h2>Activity roles decide which tabs each user can see.</h2>
-      <p>Add custom Activity roles, remove unused ones and choose which tabs are visible.</p>
+      <div>
+        <p>Add custom Activity roles, remove unused ones and choose which tabs are visible.</p>
+      </div>
     </div>
 
     <form class="module-toolbar" @submit.prevent="addRole">

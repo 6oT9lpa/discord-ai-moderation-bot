@@ -44,7 +44,9 @@ function formatRecordValue(value: unknown) {
       <div class="section-heading">
         <span>Creator workspace</span>
         <h2>Sources, templates and notification history.</h2>
-        <p>Creators see their own sources. Administrators can manage every creator.</p>
+        <div>
+          <p>Creators see their own sources. Administrators can manage every creator.</p>
+        </div>
       </div>
       <div class="form-grid">
         <label>

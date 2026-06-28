@@ -35,7 +35,7 @@ function previewText(value: string) {
     </div>
     <footer>
       <span>{{ config.footer_text || "OmniBot Activity" }}</span>
-      <span>{{ hexColor(config.color) }}</span>
+      <span>{{ config.footer_icon_url || hexColor(config.color) }}</span>
     </footer>
   </article>
 </template>

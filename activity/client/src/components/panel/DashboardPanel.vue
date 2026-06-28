@@ -6,6 +6,7 @@ import type { DashboardMetric, PanelModule, TimelineEvent } from "../../types/ac
 import ActivityTimeline from "./ActivityTimeline.vue";
 import ModuleCard from "./ModuleCard.vue";
 import StatCard from "./StatCard.vue";
+import RevealOnScroll from "../common/RevealOnScroll.vue";
 
 defineProps<{
   modules: PanelModule[];
@@ -61,9 +62,9 @@ const auditEvents = computed<TimelineEvent[]>(() => {
   if (!rows.length) return timelineEvents;
   return rows.map((row, index) => ({
     id: String(row.id ?? index),
-    title: String(row.event_type ?? "audit_event"),
-    detail: String(row.details ?? row.target_name ?? "No details"),
-    time: String(row.created_at ?? "recent"),
+    title: eventTitle(row.event_type),
+    detail: eventDetail(row),
+    time: formatTime(row.created_at),
     tone: "neutral" as const,
   }));
 });
@@ -90,24 +91,70 @@ function withLatencyState(metric: DashboardMetric): DashboardMetric {
   };
 }
 
+function eventTitle(value: unknown) {
+  const raw = String(value || "audit_event");
+  const titles: Record<string, string> = {
+    voice_join: "Voice join",
+    voice_leave: "Voice leave",
+    voice_move: "Voice move",
+    activity_synced_role_assignments_updated: "Activity role assignments updated",
+    activity_welcome_test_sent: "Welcome test sent",
+  };
+  return titles[raw] || raw.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function eventDetail(row: Record<string, unknown>) {
+  const type = String(row.event_type || "");
+  const details = parseDetails(row.details);
+  if (type === "voice_join" && details.channel) return `Joined voice channel ${details.channel}.`;
+  if (type === "voice_leave" && details.channel) return `Left voice channel ${details.channel}.`;
+  if (type === "voice_move") {
+    return `Moved from ${details.before_channel || "unknown"} to ${details.after_channel || "unknown"}.`;
+  }
+  if (typeof row.details === "string" && row.details.trim()) return row.details;
+  return String(row.target_name || "No details recorded.");
+}
+
+function parseDetails(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object") return value as Record<string, unknown>;
+  const raw = String(value || "");
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw.replaceAll("'", "\""));
+  } catch {
+    return {};
+  }
+}
+
+function formatTime(value: unknown) {
+  const raw = String(value || "");
+  if (!raw) return "recent";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleString();
+}
+
 onBeforeUnmount(() => {
   if (cooldownTimer) window.clearInterval(cooldownTimer);
 });
 </script>
 
 <template>
-  <section class="dashboard-hero">
+  <RevealOnScroll tag="section" class="dashboard-hero">
     <div>
       <span class="eyebrow">Overview</span>
       <h2>Server operations at a glance.</h2>
       <p>A compact workspace for permissions, publishing, creator tools, AI signals and system health.</p>
     </div>
-  </section>
+  </RevealOnScroll>
 
   <section class="stats-grid">
-    <button
+    <RevealOnScroll
       v-for="metric in dashboardCards"
       :key="metric.label"
+      :delay="dashboardCards.indexOf(metric) * 45"
+    >
+    <button
       class="stat-button"
       type="button"
       :disabled="metric.key !== 'latency' || latencyCooldown > 0"
@@ -115,15 +162,20 @@ onBeforeUnmount(() => {
     >
       <StatCard :metric="metric" />
     </button>
+    </RevealOnScroll>
   </section>
 
   <section class="module-grid">
-    <ModuleCard
+    <RevealOnScroll
       v-for="module in modules"
       :key="module.key"
+      :delay="modules.indexOf(module) * 35"
+    >
+    <ModuleCard
       :module="module"
       :active="activeModule === module.key"
     />
+    </RevealOnScroll>
   </section>
 
   <ActivityTimeline :events="auditEvents" action-label="Details" action-to="/panel/logs" />

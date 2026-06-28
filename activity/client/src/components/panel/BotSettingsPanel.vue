@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { RefreshCcw } from "@lucide/vue";
+import RevealOnScroll from "../common/RevealOnScroll.vue";
 import { useActivityStore } from "../../stores/activity.store";
 import type { ActivityRolePurpose, ChannelPurpose } from "../../types/activity.types";
 
@@ -49,11 +50,12 @@ async function toggleWelcome(value: boolean) {
 </script>
 
 <template>
-  <section class="panel-section">
+  <RevealOnScroll tag="section" class="panel-section">
     <div class="section-heading role-panel-heading">
+      <span>Bot settings</span>
+      <h2>Discord bot controls.</h2>
       <div>
-        <span>Bot settings</span>
-        <h2>Discord bot controls.</h2>
+        <p>Review runtime values and keep the global welcome toggle in one place.</p>
       </div>
       <button class="ghost-button" type="button" :disabled="activity.moduleLoading" @click="activity.syncRolesFromDiscord">
         <RefreshCcw :size="16" />
@@ -78,12 +80,15 @@ async function toggleWelcome(value: boolean) {
         <span>{{ value || "-" }}</span>
       </article>
     </div>
-  </section>
+  </RevealOnScroll>
 
-  <section class="panel-section">
+  <RevealOnScroll tag="section" class="panel-section" :delay="80">
     <div class="section-heading">
       <span>List channels</span>
       <h2>Set channel commands.</h2>
+      <div>
+        <p>Route welcome, logs, stream alerts and Dev Blog messages to the right Discord channels.</p>
+      </div>
     </div>
     <div class="settings-list">
       <article v-for="purpose in channelPurposes" :key="purpose.key">
@@ -101,12 +106,15 @@ async function toggleWelcome(value: boolean) {
         <span>Discord did not return text channels for this server.</span>
       </article>
     </div>
-  </section>
+  </RevealOnScroll>
 
-  <section class="panel-section">
+  <RevealOnScroll tag="section" class="panel-section" :delay="120">
     <div class="section-heading">
       <span>List roles</span>
       <h2>Set role commands.</h2>
+      <div>
+        <p>Map Discord roles to Activity administrator, creator and developer purposes.</p>
+      </div>
     </div>
     <div class="settings-list">
       <article v-for="purpose in rolePurposes" :key="purpose.key">
@@ -125,5 +133,5 @@ async function toggleWelcome(value: boolean) {
       </article>
     </div>
     <small>{{ status.message }}</small>
-  </section>
+  </RevealOnScroll>
 </template>

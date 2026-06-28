@@ -17,15 +17,24 @@ watch(
 async function saveWelcome() {
   saving.value = true;
   saving.message = "Saving...";
-  await activity.saveWelcome({ ...welcomeDraft });
-  saving.value = false;
-  saving.message = "Saved";
+  try {
+    await activity.saveWelcome({ ...welcomeDraft });
+    saving.message = "Saved";
+  } catch (error) {
+    saving.message = error instanceof Error ? error.message : "Welcome settings could not be saved";
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function resetWelcome() {
-  await activity.resetWelcome();
-  Object.assign(welcomeDraft, activity.welcome);
-  saving.message = "Reset complete";
+  try {
+    await activity.resetWelcome();
+    Object.assign(welcomeDraft, activity.welcome);
+    saving.message = "Reset complete";
+  } catch (error) {
+    saving.message = error instanceof Error ? error.message : "Welcome settings could not be reset";
+  }
 }
 
 async function testWelcome() {
@@ -56,12 +65,10 @@ function setColor(value: string) {
       <div class="section-heading">
         <span>Welcome Alerts</span>
         <h2>Design the first server moment.</h2>
+        <div>
+          <p>Configure the welcome embed text, media and routing without changing the global module toggle.</p>
+        </div>
       </div>
-
-      <label class="toggle-row">
-        <input v-model="welcomeDraft.is_enabled" type="checkbox" />
-        <span>Enable welcome message</span>
-      </label>
 
       <label>
         Title
@@ -99,6 +106,14 @@ function setColor(value: string) {
         <label>
           Footer
           <input v-model="welcomeDraft.footer_text" placeholder="OmniBot Activity" />
+        </label>
+        <label>
+          Thumbnail URL
+          <input v-model="welcomeDraft.thumbnail_url" maxlength="2048" placeholder="https://..." />
+        </label>
+        <label>
+          Footer icon URL
+          <input v-model="welcomeDraft.footer_icon_url" maxlength="2048" placeholder="https://..." />
         </label>
       </div>
 
