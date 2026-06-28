@@ -1,7 +1,7 @@
 # Privacy Policy for OmniBot
 
 **Effective Date:** June 18, 2026  
-**Last Updated:** June 18, 2026
+**Last Updated:** June 28, 2026
 
 This Privacy Policy explains what data **OmniBot** ("the Bot", "we", "our service") processes, why it is needed, how long it is stored, and how deletion can be requested.
 
@@ -26,6 +26,8 @@ The Bot may store:
 - Discord server ID;
 - channel IDs selected for logs, welcome messages, roles, statistics, stream announcements, and other features;
 - role IDs, names, colors, and positions;
+- synchronized Discord role metadata used by Activity RBAC;
+- Activity access role names, module permissions, and Discord-role assignments;
 - channel settings such as AI-moderation whitelist, slowmode, custom names, and channel purpose;
 - welcome message settings: title, description, embed color, image URLs, rules channel ID, and roles channel ID;
 - role panel settings: panel message ID, channel ID, embed text, interaction mode, buttons, emoji, and roles.
@@ -37,6 +39,7 @@ The Bot may store:
 - Discord user ID;
 - Discord username or display name when needed for logs and embeds;
 - user role IDs when needed for role assignment/removal and permission checks;
+- OAuth user profile and guild membership data returned by Discord while opening the Activity panel;
 - temporary voice room owner ID;
 - activity counters: message count, voice minutes, and warning count;
 - join/leave dates or other server event timestamps.
@@ -100,7 +103,7 @@ The Bot may collect aggregated statistics:
 - new and departed members;
 - daily or periodic server activity snapshots.
 
-### 2.7. Streams, Publications, and Dev Blog
+### 2.7. Streams, Publications, Dev Blog, and Activity Changes
 
 If stream monitoring, auto-publication, or Dev Blog modules are enabled, the Bot may store:
 
@@ -111,7 +114,8 @@ If stream monitoring, auto-publication, or Dev Blog modules are enabled, the Bot
 - announcement embed template;
 - role ID to mention;
 - last stream or publication ID to prevent duplicates;
-- Dev Blog titles, text, tags, image URLs, and post IDs.
+- Dev Blog titles, text, embed payloads, image URLs, draft status, channel ID, message ID, and post IDs;
+- Activity audit events such as access role creation, module permission changes, role synchronization, settings changes, draft saves, and publishing actions.
 
 External platforms may have their own privacy policies. The Bot contacts them only for monitoring and publication features configured by server administrators or authorized users.
 
@@ -127,6 +131,18 @@ The Bot writes technical logs to files to diagnose errors and maintain service s
 
 Logs are rotated: the current configuration uses files up to 10 MB and up to 5 backup copies.
 
+### 2.9. Discord Activity Session Data
+
+When a user opens the Discord Activity panel, OmniBot processes:
+
+- Discord OAuth code exchanged by the backend;
+- Discord access token received from Discord for the current Activity session;
+- Discord user ID, username, display name, and avatar metadata;
+- server ID and membership/permission information;
+- role IDs needed to resolve Activity access.
+
+The frontend must not store the Discord client secret. The backend exchanges OAuth codes using `DISCORD_CLIENT_SECRET`.
+
 ## 3. Information We Do Not Collect
 
 The Bot does not intentionally collect:
@@ -140,12 +156,16 @@ The Bot does not intentionally collect:
 - biometric data;
 - voice channel audio recordings;
 - private direct messages unless the user interacts with the Bot directly.
+- Discord client secrets in the frontend or browser.
 
 ## 4. How We Use Data
 
 Data is used to:
 
 - execute slash commands, buttons, menus, and modals;
+- open and authorize the Discord Activity panel;
+- decide which Activity tabs a user can see;
+- synchronize Discord roles into Activity RBAC;
 - assign and remove roles;
 - automatically assign a base role to new members;
 - create and maintain role panels;
@@ -158,6 +178,7 @@ Data is used to:
 - operate dynamic voice rooms;
 - monitor streams and auto-publications;
 - publish and archive Dev Blog content;
+- save and load Dev Blog drafts;
 - diagnose errors, prevent abuse, and keep the service running.
 
 ## 5. AI Moderation and Ollama
@@ -178,6 +199,7 @@ Data may be shared with or accessible to:
 - **the hosting provider/VPS**, where the Bot runs and the SQLite database is stored;
 - **Twitch, YouTube, Kick, TikTok/RSS services**, if stream monitoring and auto-publication are enabled;
 - **Ollama on the operator's server**, if AI moderation is enabled;
+- **VLESS/Xray proxy infrastructure**, when the deployment routes Discord API traffic through a proxy;
 - **server administrators and moderators**, if data is posted to log channels or available through moderation commands;
 - **government authorities or courts**, when required by applicable law.
 
@@ -191,6 +213,9 @@ Current default retention periods:
 - inactive/expired punishment history: **365 days**, unless changed with `PUNISHMENT_RETENTION_DAYS`;
 - retention cleanup: approximately every **6 hours**, unless changed with `RETENTION_CLEANUP_INTERVAL_HOURS`;
 - server, role, panel, welcome, channel, and voice room settings: while the Bot is used on the server or until an administrator removes/changes the setting;
+- Activity access roles, synchronized Discord role metadata, and module permissions: while the Activity panel is used on the server or until an administrator removes/changes the setting;
+- Dev Blog drafts: until deleted, published, or removed by an administrator; the current Activity UI limits saved drafts to 10;
+- Activity audit events: retained with operational logs or until deleted under the server's configured retention practice;
 - technical logs: until overwritten by log rotation or deleted by the operator.
 
 Some data may be kept longer if needed to investigate abuse, protect the server, comply with law, or recover from a technical failure.
@@ -221,6 +246,8 @@ We use reasonable technical and organizational safeguards:
 - storing the bot token and API keys in `.env`, not in public source code;
 - technical log rotation;
 - database backups when enabled by the infrastructure administrator;
+- backend-only handling of `DISCORD_CLIENT_SECRET`;
+- proxy configuration through server environment variables instead of frontend code;
 - Discord permission separation: moderation commands should be available only to users with the appropriate permissions.
 
 No system can be completely secure. If you discover a leak, vulnerability, or data access issue, report it through the contact method in section 1.

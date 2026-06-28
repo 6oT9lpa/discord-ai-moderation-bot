@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**A Discord bot with self-hosted AI moderation through Ollama. Includes autoroles, interactive role panels, stream monitoring for Twitch/YouTube/Kick, dynamic voice rooms, server statistics, SQLite logging, admin tools, and Dev Blog publishing. Built with Python 3.12 + disnake using a clean architecture and dependency injection.**
+**A Discord bot with a Discord Activity control panel and self-hosted AI moderation through Ollama. Includes role-based Activity access, autoroles, interactive role panels, welcome alerts, dynamic voice rooms, server statistics, SQLite logging, admin tools, and Dev Blog publishing. Built with Python 3.12 + disnake, FastAPI, Vue 3, and a clean architecture with dependency injection.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![disnake](https://img.shields.io/badge/disnake-2.9.2-green.svg)](https://github.com/DisnakeDev/disnake)
@@ -25,11 +25,12 @@ OmniBot is designed to automate Discord server management. Its key feature is **
 | **AI Moderation** | Local LLM moderation for spam, ads, invites, bullying, violence, and NSFW detection |
 | **Streams** | Twitch, YouTube, and Kick stream announcements |
 | **Roles** | Autoroles and interactive role panels with buttons or reactions |
+| **Discord Activity** | In-Discord control panel with role-based module access |
 | **Voice Rooms** | Dynamic voice rooms with owner controls |
 | **Statistics** | Server activity, leaderboards, voice time, and counters |
 | **Admin Tools** | Warnings, mutes, kicks, bans, chat cleanup, and slowmode |
-| **Logging** | Message, moderation, and server event logs in SQLite |
-| **Dev Blog** | Publish development posts with tags and archive support |
+| **Logging** | Message, moderation, server event, and Activity audit logs in SQLite |
+| **Dev Blog** | Build up to 10 embeds, save drafts, and publish to the configured Dev Blog channel |
 
 ---
 
@@ -127,6 +128,37 @@ Features:
 - reaction/emoji role support;
 - safe role hierarchy checks.
 
+### Discord Activity Control Panel
+
+OmniBot includes a Discord Activity frontend served by the FastAPI backend. The panel is designed to run inside Discord only; direct browser access is rejected for the protected workspace.
+
+Activity access is controlled by synchronized Discord server roles and separate Activity access roles:
+
+- built-in Activity roles: `user`, `creator`, `developer`, `moderator`, `administrator`;
+- Discord administrators can bootstrap role sync with `/sync_roles` or the Activity sync action;
+- if roles are not synchronized, non-admin users receive `403`;
+- module tabs are hidden when the user's Activity role has no permission for that tab;
+- `administrator` Activity role permissions are immutable.
+
+Default visible modules include:
+
+- Dashboard;
+- Integrations;
+- Health Status;
+- Server Stats;
+- Voice Rooms.
+
+Administrative modules include:
+
+- Access Control;
+- Welcome Alerts;
+- Role Panels;
+- Dev Blog;
+- Logs;
+- Bot Settings.
+
+The Activity backend uses aggregated endpoints for heavy panels such as Access Control, Role Panels, and Bot Settings so the UI can wait for complete data before rendering module controls.
+
 ### Streams and Publications
 
 ```text
@@ -219,20 +251,17 @@ Default retention:
 ### Dev Blog
 
 ```text
-/blog post
-/blog list --tag dev
-/blog edit post_id
-/blog delete post_id
-/blog archive
+Activity -> Dev Blog -> Publish
+Activity -> Dev Blog -> Save Draft
 ```
 
 Features:
 
-- embed-based posts;
-- tags;
-- image URLs;
-- pinned posts;
-- Markdown archive export.
+- multi-embed builder with up to 10 embeds;
+- first embed cannot be removed;
+- image URLs and per-embed colors;
+- up to 10 saved drafts stored in SQLite;
+- publish to the Dev Blog channel configured through Bot Settings or `/list_channels`/channel-purpose setup.
 
 ---
 
@@ -252,9 +281,13 @@ LOG_CHANNEL_ID=123456789012345678
 WELCOME_CHANNEL_ID=123456789012345678
 
 LOG_LEVEL=INFO
+DISCORD_PROXY_URL=http://127.0.0.1:10809
 MESSAGE_LOG_RETENTION_DAYS=30
 PUNISHMENT_RETENTION_DAYS=365
 RETENTION_CLEANUP_INTERVAL_HOURS=6
+
+DISCORD_CLIENT_ID=your_discord_application_client_id
+DISCORD_CLIENT_SECRET=your_discord_oauth_client_secret
 
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=mistral
@@ -276,6 +309,24 @@ Useful commands may include:
 /bot uptime
 /bot ping
 ```
+
+### Activity Frontend Configuration
+
+`activity/client/.env` is used at build time:
+
+```env
+VITE_DISCORD_CLIENT_ID=your_discord_application_client_id
+VITE_API_BASE_URL=
+```
+
+For production builds, leave `VITE_API_BASE_URL` empty so the Activity frontend calls the FastAPI backend on the same origin with `/api/...`. Do not compile `127.0.0.1` or `localhost` as the production API base URL.
+
+The Discord application should not be configured as a Public Client for this deployment. The Activity frontend receives an OAuth code through the Embedded App SDK, and the FastAPI backend exchanges it using `DISCORD_CLIENT_SECRET`.
+
+Recommended OAuth scopes:
+
+- bot invite URL: `bot`, `applications.commands`;
+- Activity SDK authorization: `identify`, `guilds`, `applications.commands`.
 
 ---
 
@@ -315,15 +366,17 @@ services:
 
 ```ini
 [Unit]
-Description=OmniBot
-After=network.target ollama.service
+Description=OmniBot Bot
+After=network.target ollama.service xray-client.service
+Wants=xray-client.service
 
 [Service]
 Type=simple
 User=discord
-WorkingDirectory=/opt/discord-bot
-EnvironmentFile=/opt/discord-bot/.env
-ExecStart=/opt/discord-bot/venv/bin/python main.py
+WorkingDirectory=/opt/omnibot
+EnvironmentFile=/opt/omnibot/.env
+Environment=DISCORD_PROXY_URL=http://127.0.0.1:10809
+ExecStart=/opt/omnibot/venv/bin/python main.py
 Restart=on-failure
 RestartSec=5
 
@@ -334,9 +387,9 @@ WantedBy=multi-user.target
 ### Service Management
 
 ```bash
-sudo systemctl enable discord-bot
-sudo systemctl start discord-bot
-sudo systemctl status discord-bot
+sudo systemctl enable omnibot-bot omnibot-activity
+sudo systemctl start omnibot-bot omnibot-activity
+sudo systemctl status omnibot-bot omnibot-activity
 ```
 
 ### Daily SQLite Backups
@@ -378,7 +431,8 @@ Architecture patterns:
 | `/bot uptime` | Bot uptime |
 | `/bot ping` | Discord API latency |
 | `/ai-stats` | AI moderation statistics |
-| `journalctl -u discord-bot -f` | Live systemd logs |
+| `journalctl -u omnibot-bot -f` | Live bot systemd logs |
+| `journalctl -u omnibot-activity -f` | Live Activity API logs |
 
 ---
 
@@ -412,6 +466,17 @@ curl http://localhost:11434/api/generate \
 ### The Bot Does Not Assign Roles
 
 The Bot's highest role must be above the roles it assigns. The Bot also needs the `Manage Roles` permission.
+
+### Activity Shows `Session failed` or Empty Panels
+
+Check that:
+
+- the Activity is opened from inside Discord, not a standalone browser tab;
+- `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `VITE_DISCORD_CLIENT_ID` match the Discord application;
+- production frontend was built with empty `VITE_API_BASE_URL`;
+- `/sync_roles` has synchronized Discord roles into Activity RBAC;
+- `omnibot-activity` can reach Discord through `DISCORD_PROXY_URL` when direct Discord access is blocked;
+- Discord snowflake IDs are handled as strings on the frontend.
 
 ### `database is locked`
 
