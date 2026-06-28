@@ -7,6 +7,7 @@ from disnake.ext import commands, tasks
 
 from infrastructure.config import BotConfig
 from infrastructure.logging import get_logger
+from infrastructure.network import install_aiohttp_discord_proxy
 
 logger = get_logger(__name__)
 
@@ -25,6 +26,7 @@ class DiscordBot(commands.Bot):
         role_service=None,
         stats_service=None,
     ):
+        install_aiohttp_discord_proxy()
         self._config = config
         self._role_service = role_service
         self._stats_service = stats_service

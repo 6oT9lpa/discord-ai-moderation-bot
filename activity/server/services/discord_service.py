@@ -6,7 +6,12 @@ from fastapi import HTTPException
 
 from activity.server.config import activity_server_config
 from activity.server.schemas.discord import DiscordChannel, DiscordMember, DiscordRole
+from activity.server.utils.http_client import discord_async_client
 from infrastructure.config import get_config
+from infrastructure.logging import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class DiscordService:
@@ -23,7 +28,9 @@ class DiscordService:
         if json_body is not None:
             headers["Content-Type"] = "application/json"
 
-        async with httpx.AsyncClient(timeout=15) as client:
+        started = time.perf_counter()
+        logger.info("Discord bot request started method=%s path=%s", method, path)
+        async with discord_async_client(timeout=15) as client:
             response = await client.request(
                 method,
                 f"{activity_server_config.discord_api_base}{path}",
@@ -32,9 +39,18 @@ class DiscordService:
                 headers=headers,
             )
 
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+        logger.info(
+            "Discord bot request completed method=%s path=%s status=%s elapsed_ms=%s",
+            method,
+            path,
+            response.status_code,
+            elapsed_ms,
+        )
         if response.status_code == 204:
             return None
         if response.status_code >= 400:
+            logger.warning("Discord bot request failed method=%s path=%s status=%s body=%s", method, path, response.status_code, response.text)
             raise HTTPException(status_code=response.status_code, detail=response.text)
         return response.json()
 
@@ -48,10 +64,12 @@ class DiscordService:
     ) -> Any:
         try:
             return await self.bot_request(method, path, params=params, json_body=json_body)
-        except HTTPException:
+        except HTTPException as exc:
+            logger.warning("Safe Discord request suppressed method=%s path=%s status=%s", method, path, exc.status_code)
             return None
 
     async def list_channels(self, guild_id: str, kind: Optional[Literal["text", "voice"]] = None) -> list[DiscordChannel]:
+        logger.info("Listing Discord channels guild_id=%s kind=%s", guild_id, kind or "all")
         channel_types = {"text": 0, "voice": 2}
         channels = await self.bot_request("GET", f"/guilds/{guild_id}/channels")
         if kind:
@@ -68,6 +86,7 @@ class DiscordService:
         ]
 
     async def list_roles(self, guild_id: str) -> list[DiscordRole]:
+        logger.info("Listing Discord roles guild_id=%s", guild_id)
         roles = await self.bot_request("GET", f"/guilds/{guild_id}/roles")
         return [
             DiscordRole(
@@ -85,7 +104,9 @@ class DiscordService:
     async def search_members(self, guild_id: str, query: str, limit: int) -> list[DiscordMember]:
         query = query.strip()
         if not query:
+            logger.info("Skipping empty Discord member search guild_id=%s", guild_id)
             return []
+        logger.info("Searching Discord members guild_id=%s query=%s limit=%s", guild_id, query, limit)
         members = await self.bot_request(
             "GET",
             f"/guilds/{guild_id}/members/search",
@@ -104,8 +125,10 @@ class DiscordService:
         ]
 
     async def fetch_member_role_ids(self, guild_id: str, user_id: str) -> set[int]:
+        logger.info("Fetching Discord member roles guild_id=%s user_id=%s", guild_id, user_id)
         response = await self.safe_bot_request("GET", f"/guilds/{guild_id}/members/{user_id}")
         if not response:
+            logger.warning("Discord member roles unavailable guild_id=%s user_id=%s", guild_id, user_id)
             return set()
         return {int(role_id) for role_id in response.get("roles", [])}
 
@@ -114,10 +137,14 @@ class DiscordService:
         headers = {"Authorization": f"Bot {token}"}
         started = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
+            async with discord_async_client(timeout=10) as client:
                 response = await client.get(f"{activity_server_config.discord_api_base}/gateway", headers=headers)
             if response.status_code >= 400:
+                logger.warning("Discord latency probe failed status=%s", response.status_code)
                 return None
         except httpx.HTTPError:
+            logger.exception("Discord latency probe raised HTTP error")
             return None
-        return round((time.perf_counter() - started) * 1000)
+        latency = round((time.perf_counter() - started) * 1000)
+        logger.info("Discord latency measured latency_ms=%s", latency)
+        return latency

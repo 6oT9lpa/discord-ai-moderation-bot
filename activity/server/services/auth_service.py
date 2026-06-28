@@ -1,19 +1,25 @@
 import os
 from typing import Any
 
-import httpx
 from fastapi import HTTPException
 
 from activity.server.config import activity_server_config
 from activity.server.schemas.auth import TokenRequest
+from activity.server.utils.http_client import discord_async_client
+from infrastructure.logging import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class ActivityAuthService:
     async def exchange_token(self, payload: TokenRequest) -> dict[str, Any]:
+        logger.info("Exchanging Discord OAuth code for Activity token")
         client_id = os.getenv("DISCORD_CLIENT_ID")
         client_secret = os.getenv("DISCORD_CLIENT_SECRET")
 
         if not client_id or not client_secret:
+            logger.error("Discord OAuth exchange failed because client credentials are missing")
             raise HTTPException(
                 status_code=500,
                 detail="DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET are required",
@@ -26,7 +32,7 @@ class ActivityAuthService:
             "code": payload.code,
         }
 
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with discord_async_client(timeout=10) as client:
             response = await client.post(
                 f"{activity_server_config.discord_api_base}/oauth2/token",
                 data=data,
@@ -34,9 +40,11 @@ class ActivityAuthService:
             )
 
         if response.status_code >= 400:
+            logger.warning("Discord OAuth token exchange failed status=%s body=%s", response.status_code, response.text)
             raise HTTPException(status_code=response.status_code, detail=response.text)
 
         token = response.json()
+        logger.info("Discord OAuth token exchange completed scope=%s expires_in=%s", token.get("scope", ""), token.get("expires_in", 0))
         return {
             "access_token": token["access_token"],
             "token_type": token.get("token_type", "Bearer"),
